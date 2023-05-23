@@ -1,175 +1,135 @@
-import sqlite3
+import csv
 import os
-import pandas as pd
 
-def init_db():
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
+columnas = ("TITULO", "AUTOR", "GENERO", "AÑO DE PUBLICACION", "FECHA DE ADQUISICIÓN", "CANTIDAD", "ISBN")
+libros = []
+autores = []
+generos = []
 
-    # Crear tablas si no existen
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS autores(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL
-        );
-    ''')
+def menu():
+    print("\n BIBLIOTECA ")
+    print("\n MENÚ ")
+    print("1. REGISTRAR LIBRO")
+    print("2. REGISTRAR AUTOR")
+    print("3. REGISTRAR GÉNERO")
+    print("4. CONSULTAS")
+    print("5. REPORTES (SEGÚN EL AÑO)")
+    print("6. SALIR.")
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS generos(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL
-        );
-    ''')
+def CSV_A_Lista():
+    ruta = os.path.abspath(os.getcwd())
+    archivo_trabajo = ruta + "\\datos.csv"
+    if os.path.exists(archivo_trabajo):
+        with open("datos.csv", "r") as archivo: 
+            lector = csv.reader(archivo, delimiter=',')
+            next(lector)  # Saltar la fila de encabezados
+            for fila in lector:
+                libros.append(tuple(fila))
+        archivo.close()
+    else:
+        with open("datos.csv", "w", newline="") as archivo:
+            registrador = csv.writer(archivo)
+            registrador.writerow(columnas)
+            archivo.close()
 
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS ejemplares(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            titulo TEXT NOT NULL,
-            autor INTEGER,
-            genero INTEGER,
-            año_pub INTEGER,
-            isbn TEXT,
-            fecha_adquisicion TEXT,
-            FOREIGN KEY(autor) REFERENCES autores(id),
-            FOREIGN KEY(genero) REFERENCES generos(id)
-        );
-    ''')
+def Lista_A_CSV():
+    ruta = os.path.abspath(os.getcwd())
+    archivo_trabajo = ruta + "\\datos.csv"
+    if os.path.exists(archivo_trabajo):
+        with open("datos.csv", "w", newline="") as archivo: 
+            registrador = csv.writer(archivo)
+            registrador.writerow(columnas)
+            registrador.writerows(libros)
+        archivo.close()
 
-    conn.commit()
-    conn.close()
-def add_autor(nombre):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
+def consulta_libro(isbn):
+    for libro in libros:
+        if libro[6] == isbn:
+            return libro
+    return None
 
-    c.execute("INSERT INTO autores (nombre) VALUES (?)", (nombre.upper(),))
-    
-    conn.commit()
-    conn.close()
+def reporte_por_año(año):
+    reporte = []
+    for libro in libros:
+        if libro[3] == año:
+            reporte.append(libro)
+    return reporte
 
-def add_genero(nombre):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("INSERT INTO generos (nombre) VALUES (?)", (nombre.upper(),))
-    
-    conn.commit()
-    conn.close()
-
-def add_ejemplar(titulo, autor, genero, año_pub, isbn, fecha_adquisicion):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("INSERT INTO ejemplares (titulo, autor, genero, año_pub, isbn, fecha_adquisicion) VALUES (?, ?, ?, ?, ?, ?)", 
-              (titulo.upper(), autor, genero, año_pub, isbn, fecha_adquisicion))
-    
-    conn.commit()
-    conn.close()
-def fetch_autores():
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM autores")
-    autores = c.fetchall()
-
-    conn.close()
-
-    return autores
-
-def fetch_generos():
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM generos")
-    generos = c.fetchall()
-
-    conn.close()
-
-    return generos
-
-def fetch_ejemplares():
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM ejemplares")
-    ejemplares = c.fetchall()
-
-    conn.close()
-
-    return ejemplares
-
-def fetch_ejemplares_por_autor(autor_id):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM ejemplares WHERE autor=?", (autor_id,))
-    ejemplares = c.fetchall()
-
-    conn.close()
-
-    return ejemplares
-
-def fetch_ejemplares_por_genero(genero_id):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM ejemplares WHERE genero=?", (genero_id,))
-    ejemplares = c.fetchall()
-
-    conn.close()
-
-    return ejemplares
-
-def fetch_ejemplares_por_año(año):
-    conn = sqlite3.connect('library.db')
-    c = conn.cursor()
-
-    c.execute("SELECT * FROM ejemplares WHERE año_pub=?", (año,))
-    ejemplares = c.fetchall()
-
-    conn.close()
-
-    return ejemplares
 def registrar_autor():
-    nombre = input("Ingrese el nombre del autor: ")
-    add_autor(nombre)
-    print(f"Autor {nombre} registrado con éxito.")
+    autor = input("\nIngrese el nombre del autor: ").upper()
+    autores.append(autor)
+    print("Autor registrado exitosamente.")
 
 def registrar_genero():
-    nombre = input("Ingrese el nombre del género: ")
-    add_genero(nombre)
-    print(f"Género {nombre} registrado con éxito.")
+    genero = input("\nIngrese el nombre del género: ").upper()
+    generos.append(genero)
+    print("Género registrado exitosamente.")
 
-def registrar_ejemplar():
-    titulo = input("Ingrese el título del ejemplar: ")
-    autor = int(input("Ingrese el ID del autor: "))
-    genero = int(input("Ingrese el ID del género: "))
-    año_pub = int(input("Ingrese el año de publicación: "))
-    isbn = input("Ingrese el ISBN: ")
-    fecha_adquisicion = input("Ingrese la fecha de adquisición (formato YYYY-MM-DD): ")
+CSV_A_Lista()
 
-    add_ejemplar(titulo, autor, genero, año_pub, isbn, fecha_adquisicion)
-    print(f"Ejemplar {titulo} registrado con éxito.")
+while True:
+    menu()
+    op = input("¿Qué opción deseas?: ")
 
-def main_menu():
-    while True:
-        print("1. Registrar autor")
-        print("2. Registrar género")
-        print("3. Registrar ejemplar")
-        print("4. Salir")
+    if op == "1":
+        respuesta = 1
+        while respuesta == 1:
+            registro = []
+            TITULO = input("\nIngresa el título del libro: ").upper()
+            AUTOR = input("\nIngresa el autor del libro: ").upper()
+            GENERO = input("\nIngresa el género del libro: ").upper()
+            AÑO_DE_PUBLICACION = input("\nIngresa el año de publicación: ")
+            FECHADEADQUISICION = input("\nIngresa la fecha de adquisición (dd/mm/aaaa): ")
+            CANTIDAD = int(input("\nIngresa la cantidad de libros que deseas adquirir: "))
+            ISBN = input("\nIngresa el ISBN del libro: ").upper()
+            registro.append(TITULO)
+            registro.append(AUTOR)
+            registro.append(GENERO)
+            registro.append(AÑO_DE_PUBLICACION)
+            registro.append(FECHADEADQUISICION)
+            registro.append(CANTIDAD)
+            registro.append(ISBN)
+            libros.append(tuple(registro))
+            respuesta = int(input("\n¿Deseas capturar otro registro? \n (1.SI - 0.NO): "))
 
-        opcion = int(input("Seleccione una opción: "))
+        Lista_A_CSV()
 
-        if opcion == 1:
-            registrar_autor()
-        elif opcion == 2:
-            registrar_genero()
-        elif opcion == 3:
-            registrar_ejemplar()
-        elif opcion == 4:
-            print("Saliendo del programa...")
-            break
+    elif op == "2":
+        registrar_autor()
+    elif op == "3":
+        registrar_genero()
+    elif op == "4":
+        isbn_buscar = input("\nIngresa el ISBN del libro que deseas consultar: ").upper()
+        libro = consulta_libro(isbn_buscar)
+
+        if libro:
+            print("\nLibro encontrado:")
+            print("Título:", libro[0])
+            print("Autor:", libro[1])
+            print("Género:", libro[2])
+            print("Año de Publicación:", libro[3])
+            print("Fecha de Adquisición:", libro[4])
+            print("Cantidad:", libro[5])
+            print("ISBN:", libro[6])
         else:
-            print("Opción inválida. Inténtalo de nuevo.")
-if _name_ == "_main_":
-    init_db()
-    main_menu()
+            print("\nNo se encontró un libro con ese ISBN.")
+
+    elif op == "5":
+        año_consulta = input("\nIngresa el año para generar el reporte: ")
+        reporte = reporte_por_año(año_consulta)
+        if reporte:
+            print("\nReporte de libros publicados en el año", año_consulta)
+            for libro in reporte:
+                print("\nTítulo:", libro[0])
+                print("Autor:", libro[1])
+                print("Género:", libro[2])
+                print("Año de Publicación:", libro[3])
+                print("Fecha de Adquisición:", libro[4])
+                print("Cantidad:", libro[5])
+                print("ISBN:", libro[6])
+        else:
+            print("\nNo se encontraron libros publicados en el año", año_consulta)
+
+    elif op == "6":
+        print("\n¡Hasta luego!")
+        break
